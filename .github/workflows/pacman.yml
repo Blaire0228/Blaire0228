@@ -15,7 +15,7 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 30
 
     steps:
       - name: generate pacman-contribution-graph.svg
@@ -23,15 +23,25 @@ jobs:
         with:
           github_user_name: ${{ github.repository_owner }}
 
-      - name: prepare dist directory and move generated svg
+      - name: prepare dist directory and move generated SVGs (robust)
         run: |
+          set -euo pipefail
           mkdir -p dist
-          if [ -f pacman-contribution-graph.svg ]; then
-            mv pacman-contribution-graph.svg dist/
-          else
-            echo "No pacman-contribution-graph.svg found; listing files for debug:"
-            ls -la
+          echo "Workspace root listing:"
+          ls -la
+          echo "Searching for generated SVG files..."
+          # 找到第一個 svg 作為存在性檢查（不會列出 .git 等）
+          found=$(find . -type f -name '*.svg' -not -path './.git/*' -print -quit || true)
+          if [ -z "$found" ]; then
+            echo "No SVG found. Dumping tree for debugging (limited depth):"
+            find . -maxdepth 3 -not -path './.git/*' -ls || true
             exit 1
+          else
+            echo "Found at least one SVG: $found"
+            echo "Moving all SVG files into dist/"
+            find . -type f -name '*.svg' -not -path './.git/*' -exec mv {} dist/ \;
+            echo "dist contents now:"
+            ls -la dist
           fi
 
       - name: push pacman-contribution-graph.svg to the output branch
