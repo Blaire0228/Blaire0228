@@ -23,6 +23,17 @@ jobs:
         with:
           github_user_name: ${{ github.repository_owner }}
 
+
+      - name: debug workspace after generation
+        run: |
+          echo "STEP: list root"
+          ls -la .
+          echo "STEP: list deeper"
+          find . -maxdepth 5 -not -path './.git/*' -ls
+          echo "ENV summary:"
+          env | sort
+        # 不要 set -e，讓 debug step 不會因找不到而中止（除非你想讓它失敗）
+
       - name: prepare dist directory and move generated SVGs (robust)
         run: |
           set -euo pipefail
